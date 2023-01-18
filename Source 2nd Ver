@@ -1,0 +1,63 @@
+#include <iostream>
+#include <string>
+#include <map>
+#include <algorithm>
+#include "CEL.h"
+
+using namespace std;
+
+int main() {
+    // open the Excel document
+    CEL::Workbook book("transactions.xlsx");
+    CEL::Worksheet sheet = book.worksheet(0);
+
+    // create a map to store the transactions for each account number
+    map<string, map<string, vector<double>>> transactions;
+
+    // iterate through the rows of the sheet
+    for (int row = 0; row < sheet.rowCount(); row++) {
+        // get the value of the 'account number' column
+        string account_number = sheet.cell(row, 0).toString();
+
+        // get the value of the 'credit' column
+        double credit = sheet.cell(row, 1).toDouble();
+
+        // get the value of the 'debit' column
+        double debit = sheet.cell(row, 2).toDouble();
+
+        // add the credit transaction to the map
+        transactions[account_number]["credit"].push_back(credit);
+
+        // add the debit transaction to the map
+        transactions[account_number]["debit"].push_back(debit);
+    }
+
+    // iterate through the account numbers
+    for (auto& [account_number, trans_map] : transactions) {
+        // iterate through the credit and debit
+        for(auto& [type, amounts]: trans_map){
+            double mean = 0;
+            double stddev = 0;
+            // calculate the mean and standard deviation of the transactions
+            for (double amount : amounts) {
+                mean += amount;
+            }
+            mean /= amounts.size();
+
+            for (double amount : amounts) {
+                stddev += (amount - mean) * (amount - mean);
+            }
+            stddev = sqrt(stddev / amounts.size());
+
+            // iterate through the transactions again
+            for (double amount : amounts) {
+                // check if the transaction is an outlier
+                if (abs(amount - mean) > 3 * stddev) {
+                    cout << "Outlier found for account number " << account_number << " in "<< type << " : " << amount << endl;
+                }
+            }
+        }
+    }
+
+    return 0;
+}
