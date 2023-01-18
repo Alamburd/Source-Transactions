@@ -1,0 +1,54 @@
+#include <iostream>
+#include <string>
+#include <map>
+#include "CEL.h"
+
+using namespace std;
+
+int main() {
+    // open the Excel document
+    CEL::Workbook book("transactions.xlsx");
+    CEL::Worksheet sheet = book.worksheet(0);
+
+    // create a map to store the transactions for each borrower
+    map<string, vector<double>> transactions;
+
+    // iterate through the rows of the sheet
+    for (int row = 0; row < sheet.rowCount(); row++) {
+        // get the value of the 'borrower' column
+        string borrower = sheet.cell(row, 0).toString();
+
+        // get the value of the 'transaction amount' column
+        double amount = sheet.cell(row, 1).toDouble();
+
+        // add the transaction to the map
+        transactions[borrower].push_back(amount);
+    }
+
+    // iterate through the borrowers
+    for (auto& [borrower, amounts] : transactions) {
+        double mean = 0;
+        double stddev = 0;
+
+        // calculate the mean and standard deviation of the transactions
+        for (double amount : amounts) {
+            mean += amount;
+        }
+        mean /= amounts.size();
+
+        for (double amount : amounts) {
+            stddev += (amount - mean) * (amount - mean);
+        }
+        stddev = sqrt(stddev / amounts.size());
+
+        // iterate through the transactions again
+        for (double amount : amounts) {
+            // check if the transaction is an outlier
+            if (abs(amount - mean) > 3 * stddev) {
+                cout << "Outlier found for borrower " << borrower << ": " << amount << endl;
+            }
+        }
+    }
+
+    return 0;
+}
