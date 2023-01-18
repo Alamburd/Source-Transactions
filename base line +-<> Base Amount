@@ -1,0 +1,60 @@
+#include <iostream>
+#include <string>
+#include <map>
+#include <algorithm>
+#include <cmath>
+#include "CEL.h"
+
+using namespace std;
+
+void check_similar_transactions(string account_number, vector<double> amounts, double base_amount) {
+    int count = 0;
+    vector<int> abnormal_rows;
+    for (int i = 0; i < amounts.size(); i++) {
+        if (abs(amounts[i]-base_amount) <= 100) {
+            count++;
+            abnormal_rows.push_back(i+1);
+        }
+    }
+    if (count >= 5) {
+        cout << "Abnormal behavior detected for account number " << account_number << ": " << count << " similar transactions found." << endl;
+        cout << "Abnormal transactions were found in rows: ";
+        for (int i = 0; i < abnormal_rows.size(); i++ ){
+            cout << abnormal_rows[i] << " ";
+        }
+        cout << endl;
+    }
+}
+
+int main() {
+    // open the Excel document
+    CEL::Workbook book("transactions.xlsx");
+    CEL::Worksheet sheet = book.worksheet(0);
+
+    // create a map to store the transactions for each account number
+    map<string, map<string, vector<double>>> transactions;
+
+    // iterate through the rows of the sheet
+    for (int row = 0; row < sheet.rowCount(); row++) {
+        // get the value of the 'account number' column
+        string account_number = sheet.cell(row, 0).toString();
+
+        // get the value of the 'credit' column
+        double credit = sheet.cell(row, 1).toDouble();
+
+        // add the credit transaction to the map
+        transactions[account_number]["credit"].push_back(credit);
+    }
+
+    // iterate through the account numbers
+    for (auto& [account_number, trans_map] : transactions) {
+        // iterate through the credit
+        for(auto& [type, amounts]: trans_map){
+            for (double amount : amounts) {
+                check_similar_transactions(account_number, amounts, amount);
+            }
+        }
+    }
+
+    return 0;
+}
